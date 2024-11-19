@@ -64,7 +64,7 @@ export default function Home() {
                 href={`/recipes/${recipe.id}`}
                 className="mt-4 inline-block text-blue-500 hover:text-blue-700 hover:underline"
               >
-                Ver Receita
+                Ver receita
               </a>
             </div>
           ))}
