@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -8,8 +9,8 @@ type Recipe = {
   mealType: string;
   servings: number;
   difficulty: string;
-  ingredients: string[];
-  steps: string[];
+  ingredients: string | string[]; // Pode ser uma string ou um array
+  steps: string | string[]; // Pode ser uma string ou um array
 };
 
 export default function RecipeDetails({ params }: { params: { id: string } }) {
@@ -35,7 +36,7 @@ export default function RecipeDetails({ params }: { params: { id: string } }) {
         if (!response.ok) {
           throw new Error(`Erro ao buscar a receita com ID: ${params.id}`);
         }
-        const data = await response.json();
+        const data: Recipe = await response.json();
         setRecipe(data);
       } catch (err) {
         console.error('Erro ao carregar a receita:', err);
@@ -75,6 +76,13 @@ export default function RecipeDetails({ params }: { params: { id: string } }) {
     }
   }
 
+  function normalizeArray(data: string | string[], delimiter: string): string[] {
+    if (Array.isArray(data)) {
+      return data.map((item) => item.trim());
+    }
+    return data.split(delimiter).map((item) => item.trim());
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -91,6 +99,9 @@ export default function RecipeDetails({ params }: { params: { id: string } }) {
       </div>
     );
   }
+
+  const ingredients = normalizeArray(recipe.ingredients, ',');
+  const steps = normalizeArray(recipe.steps, '.');
 
   return (
     <div className="bg-gray-100 min-h-screen p-8">
@@ -109,7 +120,7 @@ export default function RecipeDetails({ params }: { params: { id: string } }) {
         </div>
         <h2 className="text-2xl font-semibold text-gray-800 mt-6">Ingredientes</h2>
         <ul className="list-disc pl-6 mt-2 text-gray-700">
-          {recipe.ingredients.map((ingredient, index) => (
+          {ingredients.map((ingredient, index) => (
             <li key={index} className="mb-1">
               {ingredient}
             </li>
@@ -117,7 +128,7 @@ export default function RecipeDetails({ params }: { params: { id: string } }) {
         </ul>
         <h2 className="text-2xl font-semibold text-gray-800 mt-6">Etapas</h2>
         <ol className="list-decimal pl-6 mt-2 text-gray-700">
-          {recipe.steps.map((step, index) => (
+          {steps.map((step, index) => (
             <li key={index} className="mb-2">
               {step}
             </li>
