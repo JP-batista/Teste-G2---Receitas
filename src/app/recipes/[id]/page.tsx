@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+// Definição do tipo Recipe para os dados da receita
 type Recipe = {
   id?: string;
   title: string;
@@ -13,11 +14,12 @@ type Recipe = {
   steps: string | string[]; // Pode ser uma string ou um array de strings
 };
 
+// Componente para exibir os detalhes de uma receita
 export default function RecipeDetails({ params }: { params: { id: string } }) {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [error, setError] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const router = useRouter();
 
   // Função para buscar os detalhes da receita
@@ -41,8 +43,8 @@ export default function RecipeDetails({ params }: { params: { id: string } }) {
 
         const data: Recipe = await response.json();
         setRecipe(data);
-      } catch (err) {
-        console.error('Erro ao carregar os detalhes da receita:', err);
+      } catch (error) {
+        console.error('Erro ao carregar os detalhes da receita:', error);
         setError(true);
       } finally {
         setLoading(false);
@@ -78,8 +80,8 @@ export default function RecipeDetails({ params }: { params: { id: string } }) {
 
       alert('Receita excluída com sucesso!');
       router.push('/');
-    } catch (err) {
-      console.error('Erro ao excluir a receita:', err);
+    } catch (error) {
+      console.error('Erro ao excluir a receita:', error);
       alert('Erro ao excluir a receita. Por favor, tente novamente.');
     } finally {
       setIsDeleting(false);
@@ -117,8 +119,8 @@ export default function RecipeDetails({ params }: { params: { id: string } }) {
   }
 
   // Normalizar os ingredientes e as etapas
-  const ingredientsArray = normalizeData(recipe.ingredients, ',');
-  const stepsArray = normalizeData(recipe.steps, '.');
+  const normalizedIngredients = normalizeData(recipe.ingredients, ',');
+  const normalizedSteps = normalizeData(recipe.steps, '.');
 
   return (
     <div className="bg-gray-100 min-h-screen p-8">
@@ -138,7 +140,7 @@ export default function RecipeDetails({ params }: { params: { id: string } }) {
 
         <h2 className="text-2xl font-semibold text-gray-800 mt-6">Ingredientes</h2>
         <ul className="list-disc pl-6 mt-2 text-gray-700">
-          {ingredientsArray.map((ingredient, index) => (
+          {normalizedIngredients.map((ingredient, index) => (
             <li key={index} className="mb-1">
               {ingredient}
             </li>
@@ -147,7 +149,7 @@ export default function RecipeDetails({ params }: { params: { id: string } }) {
 
         <h2 className="text-2xl font-semibold text-gray-800 mt-6">Etapas</h2>
         <ol className="list-decimal pl-6 mt-2 text-gray-700">
-          {stepsArray.map((step, index) => (
+          {normalizedSteps.map((step, index) => (
             <li key={index} className="mb-2">
               {step}
             </li>
