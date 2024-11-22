@@ -75,12 +75,13 @@ export default function RecipeDetails({ params }: { params: { id: string } }) {
     }
   }
 
-  if (loading)
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <p className="text-blue-500 text-xl">Carregando...</p>
       </div>
     );
+  }
 
   if (error || !recipe) {
     return (
@@ -132,18 +133,18 @@ export default function RecipeDetails({ params }: { params: { id: string } }) {
           >
             {isDeleting ? 'Excluindo...' : 'Excluir Receita'}
           </button>
-          <a
-            href={`/recipes/edit/${recipe.id}`}
+          <button
+            onClick={() => router.push(`/recipes/edit/${recipe.id}`)}
             className="bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600 transition"
           >
             Editar Receita
-          </a>
-          <a
-            href="/"
+          </button>
+          <button
+            onClick={() => router.push('/')}
             className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition"
           >
             Voltar para a Lista
-          </a>
+          </button>
         </div>
       </div>
     </div>
