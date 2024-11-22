@@ -9,8 +9,8 @@ type Recipe = {
   mealType: string;
   servings: number;
   difficulty: string;
-  ingredients: string | string[]; // Pode ser uma string ou um array
-  steps: string | string[]; // Pode ser uma string ou um array
+  ingredients: string | string[]; // Pode ser uma string ou um array de strings
+  steps: string | string[]; // Pode ser uma string ou um array de strings
 };
 
 export default function RecipeDetails({ params }: { params: { id: string } }) {
@@ -20,37 +20,45 @@ export default function RecipeDetails({ params }: { params: { id: string } }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
 
+  // Função para buscar os detalhes da receita
   useEffect(() => {
     if (!params.id) {
-      console.error('ID da receita não foi fornecido!');
+      console.error('O ID da receita não foi fornecido!');
       setError(true);
       setLoading(false);
       return;
     }
 
-    async function fetchRecipe() {
+    async function fetchRecipeDetails() {
       try {
         const response = await fetch(
           `https://673bc1ca96b8dcd5f3f75bb6.mockapi.io/api/v1/recipes/recipes/${params.id}`
         );
+
         if (!response.ok) {
-          throw new Error(`Erro ao buscar a receita com ID: ${params.id}`);
+          throw new Error(`Erro ao buscar a receita com o ID: ${params.id}`);
         }
+
         const data: Recipe = await response.json();
         setRecipe(data);
       } catch (err) {
-        console.error('Erro ao carregar a receita:', err);
+        console.error('Erro ao carregar os detalhes da receita:', err);
         setError(true);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchRecipe();
+    fetchRecipeDetails();
   }, [params.id]);
 
-  async function handleDelete() {
-    if (!window.confirm('Tem certeza de que deseja excluir esta receita?')) {
+  // Função para deletar a receita
+  async function handleDeleteRecipe() {
+    const confirmation = window.confirm(
+      'Tem certeza de que deseja excluir esta receita?'
+    );
+
+    if (!confirmation) {
       return;
     }
 
@@ -59,7 +67,9 @@ export default function RecipeDetails({ params }: { params: { id: string } }) {
     try {
       const response = await fetch(
         `https://673bc1ca96b8dcd5f3f75bb6.mockapi.io/api/v1/recipes/recipes/${params.id}`,
-        { method: 'DELETE' }
+        {
+          method: 'DELETE',
+        }
       );
 
       if (!response.ok) {
@@ -69,20 +79,23 @@ export default function RecipeDetails({ params }: { params: { id: string } }) {
       alert('Receita excluída com sucesso!');
       router.push('/');
     } catch (err) {
-      console.error('Erro ao excluir receita:', err);
+      console.error('Erro ao excluir a receita:', err);
       alert('Erro ao excluir a receita. Por favor, tente novamente.');
     } finally {
       setIsDeleting(false);
     }
   }
 
-  function normalizeArray(data: string | string[], delimiter: string): string[] {
+  // Função para normalizar dados que podem ser strings ou arrays
+  function normalizeData(data: string | string[], delimiter: string): string[] {
     if (Array.isArray(data)) {
       return data.map((item) => item.trim());
     }
+
     return data.split(delimiter).map((item) => item.trim());
   }
 
+  // Renderização do estado de carregamento
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -91,17 +104,21 @@ export default function RecipeDetails({ params }: { params: { id: string } }) {
     );
   }
 
+  // Renderização do estado de erro
   if (error || !recipe) {
     return (
       <div className="flex flex-col items-center justify-center h-screen text-center">
-        <h1 className="text-red-500 text-2xl font-bold">Erro ao carregar os detalhes da receita.</h1>
+        <h1 className="text-red-500 text-2xl font-bold">
+          Erro ao carregar os detalhes da receita.
+        </h1>
         <p className="text-gray-600 mt-2">Por favor, tente novamente mais tarde.</p>
       </div>
     );
   }
 
-  const ingredients = normalizeArray(recipe.ingredients, ',');
-  const steps = normalizeArray(recipe.steps, '.');
+  // Normalizar os ingredientes e as etapas
+  const ingredientsArray = normalizeData(recipe.ingredients, ',');
+  const stepsArray = normalizeData(recipe.steps, '.');
 
   return (
     <div className="bg-gray-100 min-h-screen p-8">
@@ -118,25 +135,28 @@ export default function RecipeDetails({ params }: { params: { id: string } }) {
             <strong>Dificuldade:</strong> {recipe.difficulty}
           </p>
         </div>
+
         <h2 className="text-2xl font-semibold text-gray-800 mt-6">Ingredientes</h2>
         <ul className="list-disc pl-6 mt-2 text-gray-700">
-          {ingredients.map((ingredient, index) => (
+          {ingredientsArray.map((ingredient, index) => (
             <li key={index} className="mb-1">
               {ingredient}
             </li>
           ))}
         </ul>
+
         <h2 className="text-2xl font-semibold text-gray-800 mt-6">Etapas</h2>
         <ol className="list-decimal pl-6 mt-2 text-gray-700">
-          {steps.map((step, index) => (
+          {stepsArray.map((step, index) => (
             <li key={index} className="mb-2">
               {step}
             </li>
           ))}
         </ol>
+
         <div className="mt-6 flex justify-center space-x-4">
           <button
-            onClick={handleDelete}
+            onClick={handleDeleteRecipe}
             className={`bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition ${
               isDeleting ? 'opacity-50 cursor-not-allowed' : ''
             }`}
