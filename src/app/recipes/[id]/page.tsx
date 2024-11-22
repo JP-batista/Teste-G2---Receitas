@@ -1,211 +1,150 @@
 'use client';
-
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-// Definição do tipo Recipe para os dados
-type RecipeForm = {
+type Recipe = {
   id?: string;
   title: string;
   mealType: string;
   servings: number;
   difficulty: string;
-  ingredients: string | string[]; // Aceita string separada por vírgulas ou array de strings
-  steps: string | string[]; // Aceita string separada por pontos ou array de strings
+  ingredients: string[];
+  steps: string[];
 };
 
-// Componente para edição de receitas
-export default function EditRecipe({ params }: { params: { id: string } }) {
-  const [form, setForm] = useState<RecipeForm>({
-    title: '',
-    mealType: '',
-    servings: 1,
-    difficulty: '',
-    ingredients: '',
-    steps: '',
-  });
-  const [error, setError] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
+export default function RecipeDetails({ params }: { params: { id: string } }) {
+  const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
 
-  // Função para normalizar dados que podem ser strings ou arrays
-  function normalizeData(data: string | string[], delimiter: string): string[] {
-    if (Array.isArray(data)) {
-      return data.map((item) => item.trim());
+  useEffect(() => {
+    if (!params.id) {
+      console.error('ID da receita não foi fornecido!');
+      setError(true);
+      setLoading(false);
+      return;
     }
-    return data.split(delimiter).map((item) => item.trim());
-  }
 
-  // Função de envio do formulário
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
+    async function fetchRecipe() {
+      try {
+        const response = await fetch(
+          `https://673bc1ca96b8dcd5f3f75bb6.mockapi.io/api/v1/recipes/recipes/${params.id}`
+        );
+        if (!response.ok) {
+          throw new Error(`Erro ao buscar a receita com ID: ${params.id}`);
+        }
+        const data = await response.json();
+        setRecipe(data);
+      } catch (err) {
+        console.error('Erro ao carregar a receita:', err);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchRecipe();
+  }, [params.id]);
+
+  async function handleDelete() {
+    if (!window.confirm('Tem certeza de que deseja excluir esta receita?')) {
+      return;
+    }
+
+    setIsDeleting(true);
 
     try {
-      setLoading(true);
-
-      // Normalizar os ingredientes e etapas
-      const normalizedIngredients = normalizeData(form.ingredients, ',');
-      const normalizedSteps = normalizeData(form.steps, '.');
-
-      const response = await fetch(`/api/recipes/${params.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...form,
-          ingredients: normalizedIngredients,
-          steps: normalizedSteps,
-        }),
-      });
+      const response = await fetch(
+        `https://673bc1ca96b8dcd5f3f75bb6.mockapi.io/api/v1/recipes/recipes/${params.id}`,
+        { method: 'DELETE' }
+      );
 
       if (!response.ok) {
-        throw new Error('Erro ao atualizar a receita.');
+        throw new Error('Erro ao excluir a receita');
       }
 
-      alert('Receita atualizada com sucesso!');
+      alert('Receita excluída com sucesso!');
       router.push('/');
-    } catch (error) {
-      console.error('Erro ao enviar o formulário:', error);
-      setError(true);
+    } catch (err) {
+      console.error('Erro ao excluir receita:', err);
+      alert('Erro ao excluir a receita. Por favor, tente novamente.');
     } finally {
-      setLoading(false);
+      setIsDeleting(false);
     }
   }
 
-  // Função para manipular mudanças no formulário
-  function handleInputChange(
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) {
-    const { name, value } = event.target;
-    setForm((prevForm) => ({
-      ...prevForm,
-      [name]: value,
-    }));
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-blue-500 text-xl">Carregando...</p>
+      </div>
+    );
+
+  if (error || !recipe) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen text-center">
+        <h1 className="text-red-500 text-2xl font-bold">Erro ao carregar os detalhes da receita.</h1>
+        <p className="text-gray-600 mt-2">Por favor, tente novamente mais tarde.</p>
+      </div>
+    );
   }
 
   return (
     <div className="bg-gray-100 min-h-screen p-8">
       <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6">
-        <h1 className="text-3xl font-bold text-blue-700 mb-4">Editar Receita</h1>
-
-        {error && (
-          <p className="text-red-500 mb-4">
-            Ocorreu um erro ao enviar o formulário. Por favor, tente novamente.
+        <h1 className="text-3xl font-bold text-blue-700 mb-4">{recipe.title}</h1>
+        <div className="mb-4">
+          <p className="text-gray-600">
+            <strong>Tipo:</strong> {recipe.mealType}
           </p>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label htmlFor="title" className="block font-bold mb-1">
-              Título
-            </label>
-            <input
-              type="text"
-              id="title"
-              name="title"
-              value={form.title}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded-lg p-2"
-              required
-            />
-          </div>
-
-          <div className="mb-4">
-            <label htmlFor="mealType" className="block font-bold mb-1">
-              Tipo de Refeição
-            </label>
-            <input
-              type="text"
-              id="mealType"
-              name="mealType"
-              value={form.mealType}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded-lg p-2"
-              required
-            />
-          </div>
-
-          <div className="mb-4">
-            <label htmlFor="servings" className="block font-bold mb-1">
-              Porções
-            </label>
-            <input
-              type="number"
-              id="servings"
-              name="servings"
-              value={form.servings}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded-lg p-2"
-              min={1}
-              required
-            />
-          </div>
-
-          <div className="mb-4">
-            <label htmlFor="difficulty" className="block font-bold mb-1">
-              Dificuldade
-            </label>
-            <input
-              type="text"
-              id="difficulty"
-              name="difficulty"
-              value={form.difficulty}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded-lg p-2"
-              required
-            />
-          </div>
-
-          <div className="mb-4">
-            <label htmlFor="ingredients" className="block font-bold mb-1">
-              Ingredientes (separados por vírgulas)
-            </label>
-            <textarea
-              id="ingredients"
-              name="ingredients"
-              value={form.ingredients as string}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded-lg p-2"
-              rows={4}
-              required
-            ></textarea>
-          </div>
-
-          <div className="mb-4">
-            <label htmlFor="steps" className="block font-bold mb-1">
-              Etapas (separadas por pontos)
-            </label>
-            <textarea
-              id="steps"
-              name="steps"
-              value={form.steps as string}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded-lg p-2"
-              rows={4}
-              required
-            ></textarea>
-          </div>
-
-          <div className="flex justify-end space-x-4">
-            <button
-              type="submit"
-              className={`bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition ${
-                loading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-              disabled={loading}
-            >
-              {loading ? 'Salvando...' : 'Salvar Alterações'}
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push('/')}
-              className="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition"
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
+          <p className="text-gray-600">
+            <strong>Serve:</strong> {recipe.servings} pessoas
+          </p>
+          <p className="text-gray-600">
+            <strong>Dificuldade:</strong> {recipe.difficulty}
+          </p>
+        </div>
+        <h2 className="text-2xl font-semibold text-gray-800 mt-6">Ingredientes</h2>
+        <ul className="list-disc pl-6 mt-2 text-gray-700">
+          {recipe.ingredients.map((ingredient, index) => (
+            <li key={index} className="mb-1">
+              {ingredient}
+            </li>
+          ))}
+        </ul>
+        <h2 className="text-2xl font-semibold text-gray-800 mt-6">Etapas</h2>
+        <ol className="list-decimal pl-6 mt-2 text-gray-700">
+          {recipe.steps.map((step, index) => (
+            <li key={index} className="mb-2">
+              {step}
+            </li>
+          ))}
+        </ol>
+        <div className="mt-6 flex justify-center space-x-4">
+          <button
+            onClick={handleDelete}
+            className={`bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition ${
+              isDeleting ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            disabled={isDeleting}
+          >
+            {isDeleting ? 'Excluindo...' : 'Excluir Receita'}
+          </button>
+          <a
+            href={`/recipes/edit/${recipe.id}`}
+            className="bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600 transition"
+          >
+            Editar Receita
+          </a>
+          <a
+            href="/"
+            className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition"
+          >
+            Voltar para a Lista
+          </a>
+        </div>
       </div>
     </div>
   );
